@@ -1,0 +1,6 @@
+{
+    "go.useLanguageServer": true,
+    "go.testEnvVars": {
+        "GOLANG_ENVIRONMENT": "Test"
+    }
+}
