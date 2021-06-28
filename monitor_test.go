@@ -24,10 +24,7 @@ func TestConfig(t *testing.T) {
 		t.Fatal(cfg.Sites)
 	}
 
-	var val string
-
-	val = cfg.Sites[0].Name
-	if val == "" {
+	if val := cfg.Sites[0].Name; val == "" {
 		t.Fatal(val)
 	}
 
@@ -35,8 +32,19 @@ func TestConfig(t *testing.T) {
 		t.Fatal(cfg.Products)
 	}
 
-	val = cfg.Sites[0].Name
-	if val == "" {
+	if cfg.SendEmails == nil || *cfg.SendEmails == true {
+		t.Fatal(cfg.SendEmails)
+	}
+
+	if val := cfg.Sites[0].Name; val == "" {
+		t.Fatal(val)
+	}
+
+	if val := cfg.Mail.User; val == "" {
+		t.Fatal(val)
+	}
+
+	if val := cfg.Mail.Password; val == "" {
 		t.Fatal(val)
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strings"
 
 	"github.com/kelseyhightower/envconfig"
 )
@@ -26,6 +27,10 @@ type Config struct {
 	SendEmails  *bool     `json:"sendEmails"`
 	Sites       []Site    `json:"sites"`
 	Products    []Product `json:"products"`
+	Mail        struct {
+		User     string `json:"user"`
+		Password string `json:"password"`
+	} `json:"mail"`
 }
 
 func loadConfigFile(path string) (*Config, error) {
@@ -77,49 +82,71 @@ func (dest *Config) Merge(ss ...Config) error {
 		if !reflect.ValueOf(s.Sites).IsZero() {
 			dest.Sites = s.Sites
 		}
+		if !reflect.ValueOf(s.Mail.User).IsZero() {
+			dest.Mail.User = s.Mail.User
+		}
+		if !reflect.ValueOf(s.Mail.Password).IsZero() {
+			dest.Mail.Password = s.Mail.Password
+		}
+	}
+
+	return nil
+}
+
+func (dest *Config) loadAndMerge(path string) error {
+	mergingCfg, err := loadConfigFile(path)
+	if err != nil {
+		return err
+	}
+
+	err = dest.Merge(*mergingCfg)
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
 func LoadConfig() (*Config, error) {
-	env, ok := os.LookupEnv("GOLANG_ENVIRONMENT")
-	if !ok {
+	// the destination config that all others will be merged into
+	destCfg := &Config{}
+
+	// loading environment variables
+	if err := envconfig.Process("", destCfg); err != nil {
+		return nil, err
+	}
+
+	if reflect.ValueOf(destCfg.Environment).IsZero() {
 		return nil, errors.New("GOLANG_ENVIRONMENT variable not set")
 	}
 
-	osEnvCfg := &Config{}
-
-	var err error
-	var baseCfg, envCfg *Config
-
-	// loading environment variables
-	if err = envconfig.Process("", osEnvCfg); err != nil {
-		return nil, err
-	}
-
 	// base config loaded, always required
-	if baseCfg, err = loadConfigFile("config.json"); err != nil {
+	if err := destCfg.loadAndMerge("config.json"); err != nil {
 		return nil, err
 	}
 
-	// merge os config with base, both should exist and succeed
-	if err = osEnvCfg.Merge(*baseCfg); err != nil {
+	// base secret config loaded, always required since it has credentials
+	if err := destCfg.loadAndMerge("config.secret.json"); err != nil {
 		return nil, err
 	}
 
 	// environment specific config loaded, not required
-	envCfgPath := fmt.Sprintf("config.%v.json", env)
-	if _, err := os.Stat(envCfgPath); os.IsExist(err) {
-		if envCfg, err = loadConfigFile(fmt.Sprintf("config.%v.json", env)); err != nil {
-			return nil, err
-		}
-
-		if err = osEnvCfg.Merge(*envCfg); err != nil {
+	envCfgPath := fmt.Sprintf("config.%v.json", strings.ToLower(destCfg.Environment))
+	if _, err := os.Stat(envCfgPath); !os.IsNotExist(err) {
+		// the below would NOT work, because stat won't return an error if the file exists. IsExist would be appropriate if
+		// you call an os method that creates a new file, but the file you're creating already exists
+		// if _, err := os.Stat(envCfgPath); os.IsExist(err) {
+		if err = destCfg.loadAndMerge(envCfgPath); err != nil {
 			return nil, err
 		}
 	}
 
-	// all merges would applies to the osEnv config, so we can just return it
-	return osEnvCfg, nil
+	envSecretCfgPath := fmt.Sprintf("config.%v.secret.json", strings.ToLower(destCfg.Environment))
+	if _, err := os.Stat(envSecretCfgPath); !os.IsNotExist(err) {
+		if err = destCfg.loadAndMerge(envSecretCfgPath); err != nil {
+			return nil, err
+		}
+	}
+
+	return destCfg, nil
 }

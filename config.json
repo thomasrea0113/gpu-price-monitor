@@ -6,13 +6,13 @@
             "urlFormat": "https://www.bestbuy.com/site/searchpage.jsp?st=%q&_dyncharset=UTF-8&_dynSessConf=&id=pcat17071&type=page&sc=Global&cp=1&nrp=&sp=&qp=&list=n&af=true&iht=y&usc=All+Categories&ks=960&keys=keys"
         },
         {
-            "name": "Walmart",
+            "name": "Wal-Mart",
             "urlFormat": "https://www.walmart.com/search/?query=%q"
         }
     ],
     "products": [
         {
-            "name": "RTX 2060",
+            "name": "RTX 2060 12GB",
             "priceThreshold": 500.40,
             "additionalKeywords": [
                 "EVGA",
