@@ -1,27 +1,27 @@
 package monitor
 
 import (
-	"runtime"
-
-	"github.com/thomasrea0113/gpu-price-monitor/domain"
+	"sync"
 )
 
-type WorkTask func(domain.PriceCheckJob) domain.PriceCheckResponse
+type WorkTask func(interface{}) interface{}
 
 type WorkerPool struct {
-	Results chan domain.PriceCheckResponse
+	WorkerCount int
+	Results     chan interface{}
 
-	jobs     chan domain.PriceCheckJob
+	jobs     chan interface{}
 	JobCount int
 	work     WorkTask
 }
 
-func NewWorkerPool(jobs []domain.PriceCheckJob, work WorkTask) *WorkerPool {
+func NewWorkerPool(workerCount int, jobs []interface{}, work WorkTask) *WorkerPool {
 	pool := WorkerPool{JobCount: len(jobs)}
-	pool.Results = make(chan domain.PriceCheckResponse)
+	pool.WorkerCount = workerCount
+	pool.Results = make(chan interface{})
 	pool.work = work
 
-	pool.jobs = make(chan domain.PriceCheckJob, pool.JobCount)
+	pool.jobs = make(chan interface{}, pool.JobCount)
 	for _, job := range jobs {
 		pool.jobs <- job
 	}
@@ -37,7 +37,20 @@ func (pool WorkerPool) doWork() {
 }
 
 func (pool WorkerPool) Start() {
-	for c := 0; c < runtime.NumCPU(); c++ {
+	for c := 0; c < pool.WorkerCount; c++ {
 		go pool.doWork()
 	}
+}
+
+func (pool WorkerPool) StartGroup() *sync.WaitGroup {
+	var wg sync.WaitGroup
+	for c := 0; c < pool.WorkerCount; c++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			pool.doWork()
+		}()
+	}
+
+	return &wg
 }

@@ -55,8 +55,8 @@ func loadConfigFile(path string) (*Config, error) {
 	return cfg, nil
 }
 
-func (cfg Config) GetJobs() []PriceCheckJob {
-	products := make([]PriceCheckJob, len(cfg.Sites)*len(cfg.Products))
+func (cfg Config) GetJobs() []interface{} {
+	products := make([]interface{}, len(cfg.Sites)*len(cfg.Products))
 
 	i := 0
 	for _, site := range cfg.Sites {
@@ -65,6 +65,7 @@ func (cfg Config) GetJobs() []PriceCheckJob {
 			i++
 		}
 	}
+
 	return products
 }
 

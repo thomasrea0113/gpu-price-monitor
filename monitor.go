@@ -37,11 +37,11 @@ func MonitorProducts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pool := NewWorkerPool(cfg.GetJobs(), scrape)
+	pool := NewWorkerPool(100, cfg.GetJobs(), scrape)
 	pool.Start()
 
 	for i := 0; i < pool.JobCount; i++ {
-		// TODO do something meaningful with the results
+		// TODO do something meaningful with the results, like generate an email
 		fmt.Printf("Result: %v\n", <-pool.Results)
 	}
 

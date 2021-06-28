@@ -9,11 +9,17 @@ type PriceCheckJob struct {
 	Product Product
 }
 
+// a struct to hold quantity/price information for a specific model of a product
+type Model struct {
+	Number            string
+	QuantityAvailable int
+	Price             float32
+	Error             error
+}
+
+//
 type PriceCheckResponse struct {
-	ProductName string
-	Models      []struct {
-		Name              string
-		QuantityAvailable int
-		price             float32
-	}
+	Job    PriceCheckJob
+	Error  error
+	Models []Model
 }
