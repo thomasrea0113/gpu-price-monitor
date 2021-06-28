@@ -2,14 +2,14 @@
     "sendEmails": false,
     "sites": [
         {
-            "name": "Wal-Mart",
-            "urlFormat": "https://www.walmart.com/search/?query=%v&max_price=%v&min_price=&page=1"
+            "name": "Best Buy",
+            "urlFormat": "https://www.bestbuy.com/site/searchpage.jsp?_dyncharset=UTF-8&id=pcat17071&iht=y&keys=keys&ks=960&list=n&sc=Global&st=%v+%v&type=page&usc=All%20Categories"
         }
     ],
     "products": [
         {
             "name": "RTX 3060",
-            "priceThreshold": 500,
+            "priceThreshold": 3000,
             "additionalKeywords": [
                 "EVGA",
                 "ASUS",

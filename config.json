@@ -7,7 +7,7 @@
         },
         {
             "name": "Wal-Mart",
-            "urlFormat": "https://www.walmart.com/search/?query=%v&max_price=%v&min_price=&page=1"
+            "urlFormat": "https://www.walmart.com/search/?query=%v+%v&max_price=%v&min_price=&page=1"
         }
     ],
     "products": [

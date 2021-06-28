@@ -11,10 +11,9 @@ type PriceCheckJob struct {
 
 // a struct to hold quantity/price information for a specific model of a product
 type Model struct {
-	Number            string
-	QuantityAvailable int
-	Price             float32
-	Error             error
+	Number string
+	Price  float32
+	Error  error
 }
 
 //
