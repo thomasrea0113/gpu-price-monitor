@@ -10,18 +10,22 @@ import (
 	"github.com/kelseyhightower/envconfig"
 )
 
+type Site struct {
+	Name      string `json:"name"`
+	UrlFormat string `json:"urlFormat"`
+}
+
+type Product struct {
+	Name               string   `json:"name"`
+	AdditionalKeywords []string `json:"additionalKeywords"`
+	PriceThreshhold    float32  `json:"priceThreshold"`
+}
+
 type Config struct {
-	Environment string `envconfig:"GOLANG_ENVIRONMENT"`
-	SendEmails  *bool  `json:"sendEmails"`
-	Sites       []struct {
-		Name      string `json:"name"`
-		UrlFormat string `json:"urlFormat"`
-	} `json:"sites"`
-	Products []struct {
-		Name               string   `json:"name"`
-		AdditionalKeywords []string `json:"additionalKeywords"`
-		PriceThreshhold    float32  `json:"priceThreshold"`
-	} `json:"products"`
+	Environment string    `envconfig:"GOLANG_ENVIRONMENT"`
+	SendEmails  *bool     `json:"sendEmails"`
+	Sites       []Site    `json:"sites"`
+	Products    []Product `json:"products"`
 }
 
 func loadConfigFile(path string) (*Config, error) {
@@ -43,9 +47,22 @@ func loadConfigFile(path string) (*Config, error) {
 	return cfg, nil
 }
 
+func (cfg Config) GetJobs() []PriceCheckJob {
+	products := make([]PriceCheckJob, len(cfg.Sites)*len(cfg.Products))
+
+	i := 0
+	for _, site := range cfg.Sites {
+		for _, product := range cfg.Products {
+			products[i] = PriceCheckJob{Site: site, Product: product}
+			i++
+		}
+	}
+	return products
+}
+
 // a simple merge function that applies each field value on top of dest, or the value of the previous Config in the array
 // zero and nil values are not overwritten
-func Merge(dest *Config, ss ...Config) error {
+func (dest *Config) Merge(ss ...Config) error {
 	// TODO use reflection to cut down on maintaince/boilterplate?
 	for _, s := range ss {
 		if !reflect.ValueOf(s.Environment).IsZero() {
@@ -87,7 +104,7 @@ func LoadConfig() (*Config, error) {
 	}
 
 	// merge os config with base, both should exist and succeed
-	if err = Merge(osEnvCfg, *baseCfg); err != nil {
+	if err = osEnvCfg.Merge(*baseCfg); err != nil {
 		return nil, err
 	}
 
@@ -98,7 +115,7 @@ func LoadConfig() (*Config, error) {
 			return nil, err
 		}
 
-		if err = Merge(osEnvCfg, *envCfg); err != nil {
+		if err = osEnvCfg.Merge(*envCfg); err != nil {
 			return nil, err
 		}
 	}
