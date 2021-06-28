@@ -40,12 +40,23 @@ func TestConfig(t *testing.T) {
 		t.Fatal(val)
 	}
 
-	if val := cfg.Mail.User; val == "" {
+	if val := cfg.Mail.From; val == "" {
 		t.Fatal(val)
 	}
 
 	if val := cfg.Mail.Password; val == "" {
 		t.Fatal(val)
+	}
+}
+
+func TestMail(t *testing.T) {
+	cfg, err := domain.LoadConfig()
+	if err != nil {
+		t.Fatalf("Error loading config: %v", err)
+	}
+
+	if err := monitor.SendMail(cfg, "Test Message", "Hello world!"); err != nil {
+		t.Fatalf("failed sending mail: %v", err)
 	}
 }
 

@@ -22,15 +22,18 @@ type Product struct {
 	PriceThreshhold    float32  `json:"priceThreshold"`
 }
 
+type Mail struct {
+	To       []string
+	From     string `json:"from"`
+	Password string `json:"password"`
+}
+
 type Config struct {
 	Environment string    `envconfig:"GOLANG_ENVIRONMENT"`
 	SendEmails  *bool     `json:"sendEmails"`
 	Sites       []Site    `json:"sites"`
 	Products    []Product `json:"products"`
-	Mail        struct {
-		User     string `json:"user"`
-		Password string `json:"password"`
-	} `json:"mail"`
+	Mail        Mail      `json:"mail"`
 }
 
 func loadConfigFile(path string) (*Config, error) {
@@ -82,8 +85,11 @@ func (dest *Config) Merge(ss ...Config) error {
 		if !reflect.ValueOf(s.Sites).IsZero() {
 			dest.Sites = s.Sites
 		}
-		if !reflect.ValueOf(s.Mail.User).IsZero() {
-			dest.Mail.User = s.Mail.User
+		if !reflect.ValueOf(s.Mail.To).IsZero() {
+			dest.Mail.To = s.Mail.To
+		}
+		if !reflect.ValueOf(s.Mail.From).IsZero() {
+			dest.Mail.From = s.Mail.From
 		}
 		if !reflect.ValueOf(s.Mail.Password).IsZero() {
 			dest.Mail.Password = s.Mail.Password
