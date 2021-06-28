@@ -1,0 +1,22 @@
+{
+  "name": "gpu-price-monitor",
+  "version": "1.0.0",
+  "description": "I'll write something here... eventually",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thomasrea0113/gpu-price-monitor.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/thomasrea0113/gpu-price-monitor/issues"
+  },
+  "homepage": "https://github.com/thomasrea0113/gpu-price-monitor#readme",
+  "dependencies": {
+    "puppeteer": "10.0.0"
+  }
+}
