@@ -1,7 +1,6 @@
 package monitor
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -9,38 +8,36 @@ import (
 	"github.com/thomasrea0113/gpu-price-monitor/domain"
 )
 
-func MonitorProducts(w http.ResponseWriter, r *http.Request) {
-	message := domain.RequestMessage{}
-
+func getConfigWithOverrides(overrideCfg *domain.Config) (*domain.Config, error) {
 	cfg, err := domain.LoadConfig()
 	if err != nil {
-		writeAndLog(w, "Error loading config: %v", err)
+		return cfg, fmt.Errorf("Error loading config: %v", err)
+	}
+
+	if overrideCfg != nil {
+		if err := domain.Merge(cfg, *overrideCfg); err != nil {
+			return cfg, fmt.Errorf("error merging override config with base config: %v", err)
+		}
+	}
+
+	return cfg, nil
+}
+
+func MonitorProducts(w http.ResponseWriter, r *http.Request) {
+	// reading message body
+	var msg domain.RequestMessage
+	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
+		writeAndLog(w, "could not read request body: %v", err)
 		return
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&message); err != nil {
-		writeAndLog(w, "could not read request body")
+	cfg, err := getConfigWithOverrides(msg.ConfigOverrides)
+	if err != nil {
+		writeAndLog(w, "couldn't get config: %v", err)
 		return
 	}
 
-	var overrides []byte
-	if message.ConfigOverrides != nil {
-		if overrides, err = json.Marshal(message.ConfigOverrides); err != nil {
-			writeAndLog(w, "error marshalling config: %v", message.ConfigOverrides)
-			return
-		}
+	// TODO process each product for each site
 
-		overrideCfg := domain.Config{}
-		if err = json.NewDecoder(bytes.NewReader(overrides)).Decode(&overrideCfg); err != nil {
-			writeAndLog(w, "error applying config overrides")
-			return
-		}
-
-		if err := domain.Merge(cfg, overrideCfg); err != nil {
-			writeAndLog(w, "error merging override config with base config: %v", err)
-			return
-		}
-	}
-
-	fmt.Fprint(w, "Okay")
+	fmt.Fprintf(w, "Okay")
 }

@@ -46,6 +46,7 @@ func loadConfigFile(path string) (*Config, error) {
 // a simple merge function that applies each field value on top of dest, or the value of the previous Config in the array
 // zero and nil values are not overwritten
 func Merge(dest *Config, ss ...Config) error {
+	// TODO use reflection to cut down on maintaince/boilterplate?
 	for _, s := range ss {
 		if !reflect.ValueOf(s.Environment).IsZero() {
 			dest.Environment = s.Environment
