@@ -1,9 +1,5 @@
 package monitor
 
-import (
-	"sync"
-)
-
 type WorkTask func(interface{}) interface{}
 
 type WorkerPool struct {
@@ -16,12 +12,17 @@ type WorkerPool struct {
 }
 
 func NewWorkerPool(workerCount int, jobs []interface{}, work WorkTask) *WorkerPool {
+	// we shouldn't create more workers than there are jobs
 	pool := WorkerPool{JobCount: len(jobs)}
+	if workerCount > pool.JobCount {
+		workerCount = pool.JobCount
+	}
+
+	pool.jobs = make(chan interface{}, pool.JobCount)
 	pool.WorkerCount = workerCount
 	pool.Results = make(chan interface{})
 	pool.work = work
 
-	pool.jobs = make(chan interface{}, pool.JobCount)
 	for _, job := range jobs {
 		pool.jobs <- job
 	}
@@ -40,17 +41,4 @@ func (pool WorkerPool) Start() {
 	for c := 0; c < pool.WorkerCount; c++ {
 		go pool.doWork()
 	}
-}
-
-func (pool WorkerPool) StartGroup() *sync.WaitGroup {
-	var wg sync.WaitGroup
-	for c := 0; c < pool.WorkerCount; c++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			pool.doWork()
-		}()
-	}
-
-	return &wg
 }

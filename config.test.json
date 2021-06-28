@@ -1,3 +1,21 @@
 {
-    "sendEmails": false
+    "sendEmails": false,
+    "sites": [
+        {
+            "name": "Wal-Mart",
+            "urlFormat": "https://www.walmart.com/search/?query=%v&max_price=%v&min_price=&page=1"
+        }
+    ],
+    "products": [
+        {
+            "name": "RTX 3060",
+            "priceThreshold": 500,
+            "additionalKeywords": [
+                "EVGA",
+                "ASUS",
+                "MSI",
+                "Gigabyte"
+            ]
+        }
+    ]
 }

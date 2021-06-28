@@ -7,13 +7,13 @@
         },
         {
             "name": "Wal-Mart",
-            "urlFormat": "https://www.walmart.com/search/?query=%q"
+            "urlFormat": "https://www.walmart.com/search/?query=%v&max_price=%v&min_price=&page=1"
         }
     ],
     "products": [
         {
             "name": "RTX 2060 12GB",
-            "priceThreshold": 500.40,
+            "priceThreshold": 500,
             "additionalKeywords": [
                 "EVGA",
                 "ASUS",
@@ -23,7 +23,7 @@
         },
         {
             "name": "RTX 3060",
-            "priceThreshold": 500.40,
+            "priceThreshold": 500,
             "additionalKeywords": [
                 "EVGA",
                 "ASUS",

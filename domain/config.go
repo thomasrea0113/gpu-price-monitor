@@ -19,7 +19,7 @@ type Site struct {
 type Product struct {
 	Name               string   `json:"name"`
 	AdditionalKeywords []string `json:"additionalKeywords"`
-	PriceThreshhold    float32  `json:"priceThreshold"`
+	PriceThreshhold    int      `json:"priceThreshold"`
 }
 
 type Mail struct {
