@@ -37,21 +37,12 @@ func MonitorProducts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO process each product for each site
 	pool := NewWorkerPool(cfg.GetJobs(), scrape)
+	pool.Start()
 
-	// add five workers to the pool
-	for i := 0; i < 5; i++ {
-		go pool.DoWork()
-	}
-
-	for {
-		if result, open := <-pool.Results; open {
-			// TODO do something meaningful with the results
-			fmt.Printf("Result: %v\n", result)
-		} else {
-			break
-		}
+	for i := 0; i < pool.JobCount; i++ {
+		// TODO do something meaningful with the results
+		fmt.Printf("Result: %v\n", <-pool.Results)
 	}
 
 	fmt.Fprintf(w, "Okay")
