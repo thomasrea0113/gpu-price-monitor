@@ -16,6 +16,16 @@
                 "MSI",
                 "Gigabyte"
             ]
+        },
+        {
+            "name": "RTX 2060",
+            "priceThreshold": 3000,
+            "additionalKeywords": [
+                "EVGA",
+                "ASUS",
+                "MSI",
+                "Gigabyte"
+            ]
         }
     ]
 }

@@ -41,8 +41,9 @@ func MonitorProducts(w http.ResponseWriter, r *http.Request) {
 	pool.Start()
 
 	for i := 0; i < pool.JobCount; i++ {
+		result := (<-pool.Results).(domain.PriceCheckResponse)
 		// TODO do something meaningful with the results, like generate an email
-		fmt.Printf("Result: %v\n", <-pool.Results)
+		fmt.Printf("Result: %v\n\n", result.Models)
 	}
 
 	fmt.Fprintf(w, "Okay")

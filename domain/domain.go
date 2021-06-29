@@ -11,6 +11,7 @@ type PriceCheckJob struct {
 
 // a struct to hold quantity/price information for a specific model of a product
 type Model struct {
+	Url    string
 	Number string
 	Price  float32
 	Error  error

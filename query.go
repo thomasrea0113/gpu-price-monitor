@@ -75,8 +75,11 @@ func QueryBestBuy(j domain.PriceCheckJob, keyword string) []domain.Model {
 		}
 
 		// price text has the leading $, need to exclude it
-		priceStr := s.Find(".priceView-customer-price span[aria-hidden=true]").Text()[1:]
-		priceStr = strings.ReplaceAll(priceStr, ",", "")
+		priceStr := s.Find(".priceView-customer-price span[aria-hidden=true]").Text()
+
+		if priceStr != "" {
+			priceStr = strings.ReplaceAll(priceStr[1:], ",", "")
+		}
 
 		price, err := strconv.ParseFloat(priceStr, 32)
 		if err != nil {
@@ -86,8 +89,17 @@ func QueryBestBuy(j domain.PriceCheckJob, keyword string) []domain.Model {
 
 		modelNumber := s.Find(".sku-value").Text()
 
+		url, ok := s.Find(".sku-header a").Attr("href")
+		if !ok {
+			log.Printf("model has no details link")
+			return
+		}
+
 		if price < float64(j.Product.PriceThreshhold) {
-			models = append(models, domain.Model{Number: modelNumber, Price: float32(price)})
+			models = append(models, domain.Model{
+				Number: modelNumber,
+				Price:  float32(price),
+				Url:    "https://bestbuy.com" + url})
 		}
 	})
 
