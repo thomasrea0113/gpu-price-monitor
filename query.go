@@ -134,6 +134,7 @@ func QueryNewegg(j domain.PriceCheckJob, keyword string) []domain.Model {
 
 		if priceText == "" {
 			log.Println("couldn't get item price")
+			return
 		}
 
 		price, err := strconv.ParseFloat(strings.ReplaceAll(priceText, ",", ""), 32)
@@ -142,12 +143,12 @@ func QueryNewegg(j domain.PriceCheckJob, keyword string) []domain.Model {
 			return
 		}
 
-		detailsUrl, ok := s.Find("a[title=View Details][href]").Attr("href")
-		if !ok {
+		// navigating to details URL, since the search page doesn't include model number
+		detailsUrl, ok := s.Find("a[title='View Details']").Attr("href")
+		if detailsUrl == "" || !ok {
 			log.Println("couldn't get details url")
+			return
 		}
-
-		// TODO navigate to details url
 
 		detailsContent, err := execPuppeteer(detailsUrl)
 		if err != nil {
@@ -162,7 +163,19 @@ func QueryNewegg(j domain.PriceCheckJob, keyword string) []domain.Model {
 		}
 
 		// TODO get model number
-		modelNumber := detailsDoc.Find("tr th:text(Model)").Text()
+		var modelNumber string
+		detailsDoc.Find("tr th").EachWithBreak(func(i int, s *goquery.Selection) bool {
+			if strings.ToLower(strings.TrimSpace(s.Text())) == "model" {
+				modelNumber = s.SiblingsFiltered("td").Text()
+				return false
+			}
+			return true
+		})
+
+		if modelNumber == "" {
+			log.Println("model number not found on details page")
+			return
+		}
 
 		models = append(models, domain.Model{Price: float32(price), Number: modelNumber, Url: detailsUrl})
 	})

@@ -21,21 +21,22 @@ func scraper(work KeywordScrapeFunc) func(domain.PriceCheckJob) []domain.Model {
 			keywordJobs[i] = k
 		}
 
-		worker := NewWorkerPool(5, keywordJobs, func(t interface{}) interface{} {
+		worker := NewWorkerPool(100, keywordJobs, func(t interface{}) interface{} {
 			return work(j, t.(string))
 		})
 
 		worker.Start()
 
-		// reduce keyword model-map into one flat list of models. If the same model appears twice, don't overwrite. Assume
-		// that the keyword search returned the same exact results as a previous query. Which every goroutine completes
-		// first will take priority. This may produce unexpected results if a site lists the same model twice
+		// reduce keyword model-map into one flat list of models. If the same model appears twice, take
+		// the one with the lower price
 		for i := 0; i < worker.JobCount; i++ {
 			result := <-worker.Results
 			models := result.([]domain.Model)
 			for _, model := range models {
-				if _, ok := modelMap[model.Number]; !ok {
-					modelMap[model.Number] = model
+				if existing, ok := modelMap[model.Number]; !ok {
+					if model.Price < existing.Price {
+						modelMap[model.Number] = model
+					}
 				}
 			}
 		}
