@@ -52,8 +52,6 @@ func uSprintf(format string, vv ...string) string {
 
 func QueryBestBuy(j domain.PriceCheckJob, keyword string) []domain.Model {
 	models := make([]domain.Model, 0)
-
-	// TODO use colly to get all the models returned for a given product + keyword, across first couple pages
 	url := uSprintf(j.Site.UrlFormat, keyword, j.Product.Name)
 
 	html, err := execPuppeteer(url)
@@ -77,10 +75,12 @@ func QueryBestBuy(j domain.PriceCheckJob, keyword string) []domain.Model {
 		// price text has the leading $, need to exclude it
 		priceStr := s.Find(".priceView-customer-price span[aria-hidden=true]").Text()
 
-		if priceStr != "" {
-			priceStr = strings.ReplaceAll(priceStr[1:], ",", "")
+		if priceStr == "" {
+			log.Println("couldn't get item price")
+			return
 		}
 
+		priceStr = strings.ReplaceAll(priceStr[1:], ",", "")
 		price, err := strconv.ParseFloat(priceStr, 32)
 		if err != nil {
 			log.Printf("Error converting price to int: %v", err)
@@ -114,8 +114,60 @@ func QueryWalMart(j domain.PriceCheckJob, keyword string) []domain.Model {
 }
 
 func QueryNewegg(j domain.PriceCheckJob, keyword string) []domain.Model {
-	// TODO use colly to get all the models returned for a given product + keyword, across first couple pages
-	return make([]domain.Model, 0)
+	models := make([]domain.Model, 0)
+	url := uSprintf(j.Site.UrlFormat, keyword, j.Product.Name, strconv.Itoa(j.Product.PriceThreshhold))
+
+	html, err := execPuppeteer(url)
+	if err != nil {
+		log.Printf("error execing puppeteer: %v", err)
+		return models
+	}
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(html))
+	if err != nil {
+		log.Printf("error parsing document: %v", err)
+		return models
+	}
+
+	doc.Find(".item-cell").Each(func(i int, s *goquery.Selection) {
+		priceText := s.Find(".price-current strong,sup").Text()
+
+		if priceText == "" {
+			log.Println("couldn't get item price")
+		}
+
+		price, err := strconv.ParseFloat(strings.ReplaceAll(priceText, ",", ""), 32)
+		if err != nil {
+			log.Printf("error getting price: %v", err)
+			return
+		}
+
+		detailsUrl, ok := s.Find("a[title=View Details][href]").Attr("href")
+		if !ok {
+			log.Println("couldn't get details url")
+		}
+
+		// TODO navigate to details url
+
+		detailsContent, err := execPuppeteer(detailsUrl)
+		if err != nil {
+			log.Printf("error navigating to details: %v", err)
+			return
+		}
+
+		detailsDoc, err := goquery.NewDocumentFromReader(strings.NewReader(detailsContent))
+		if err != nil {
+			log.Printf("error parsing document: %v", err)
+			return
+		}
+
+		// TODO get model number
+		modelNumber := detailsDoc.Find("tr th:text(Model)").Text()
+
+		models = append(models, domain.Model{Price: float32(price), Number: modelNumber, Url: detailsUrl})
+	})
+
+	return models
 }
 
 func QueryMicroCenter(j domain.PriceCheckJob, keyword string) []domain.Model {

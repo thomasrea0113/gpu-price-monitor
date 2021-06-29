@@ -6,8 +6,8 @@
             "urlFormat": "https://www.bestbuy.com/site/searchpage.jsp?st=%q&_dyncharset=UTF-8&_dynSessConf=&id=pcat17071&type=page&sc=Global&cp=1&nrp=&sp=&qp=&list=n&af=true&iht=y&usc=All+Categories&ks=960&keys=keys"
         },
         {
-            "name": "Wal-Mart",
-            "urlFormat": "https://www.walmart.com/search/?query=%v+%v&max_price=%v&min_price=&page=1"
+            "name": "Newegg",
+            "urlFormat": "https://www.newegg.com/p/pl?d=%v+%v&N=4131&LeftPriceRange=0+%v&PageSize=96"
         }
     ],
     "products": [

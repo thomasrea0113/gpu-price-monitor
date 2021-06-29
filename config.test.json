@@ -4,6 +4,10 @@
         {
             "name": "Best Buy",
             "urlFormat": "https://www.bestbuy.com/site/searchpage.jsp?_dyncharset=UTF-8&id=pcat17071&iht=y&keys=keys&ks=960&list=n&sc=Global&st=%v+%v&type=page&usc=All%20Categories"
+        },
+        {
+            "name": "Newegg",
+            "urlFormat": "https://www.newegg.com/p/pl?d=%v+%v&N=4131&LeftPriceRange=0+%v&PageSize=96"
         }
     ],
     "products": [
