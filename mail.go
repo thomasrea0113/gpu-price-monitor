@@ -22,9 +22,9 @@ func SendMail(cfg *domain.Config, subject string, msg string) error {
 	smtpServer := smtpServer{host: "smtp.gmail.com", port: "587"}
 	auth := smtp.PlainAuth("", cfg.Mail.From, cfg.Mail.Password, smtpServer.host)
 
-	msgBody := fmt.Sprintf("Subject: %v\r\n"+
-		"\r\n"+
-		"%v\r\n", subject, msg)
+	msgBody := fmt.Sprintf("Subject: %v\n"+
+		"MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n\n"+
+		"%v\n", subject, msg)
 
 	if err := smtp.SendMail(smtpServer.Address(), auth, cfg.Mail.From, cfg.Mail.To, []byte(msgBody)); err != nil {
 		return err

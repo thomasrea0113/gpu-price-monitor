@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/thomasrea0113/gpu-price-monitor/domain"
 )
@@ -40,11 +41,33 @@ func MonitorProducts(w http.ResponseWriter, r *http.Request) {
 	pool := NewWorkerPool(100, cfg.GetJobs(), scrape)
 	pool.Start()
 
+	hasStock := false
+	body := "<h2>Looks like some GPUs are finally available!</h2>"
 	for i := 0; i < pool.JobCount; i++ {
 		result := (<-pool.Results).(domain.PriceCheckResponse)
-		// TODO do something meaningful with the results, like generate an email
-		fmt.Printf("Result: %v\n\n", result.Models)
+
+		if len(result.Models) > 0 {
+			hasStock = true
+			modelStr := "<ul>"
+			for _, model := range result.Models {
+				if model.Error == nil {
+					modelStr += Hprintf("<li>%v (model: %v) for %v </li>",
+						result.Job.Product.Name,
+						model.Number,
+						strconv.Itoa(int(model.Price)))
+				}
+			}
+			modelStr += "</ul>"
+
+			body += Hprintf("<div><h3>%v</h3>%v</div>", result.Job.Site.Name, modelStr)
+		}
 	}
 
-	fmt.Fprintf(w, "Okay")
+	if hasStock {
+		SendMail(cfg, "GPU Stock Available!", body)
+		fmt.Fprint(w, body)
+	} else {
+		writeAndLog(w, "No stock available")
+	}
+
 }

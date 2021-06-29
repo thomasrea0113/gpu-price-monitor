@@ -55,7 +55,7 @@ func TestMail(t *testing.T) {
 		t.Fatalf("Error loading config: %v", err)
 	}
 
-	if err := monitor.SendMail(cfg, "Test Message", "Hello world!"); err != nil {
+	if err := monitor.SendMail(cfg, "Test Message", "<h3>Hello world!</h3><p>some <i>text</i></p>"); err != nil {
 		t.Fatalf("failed sending mail: %v", err)
 	}
 }

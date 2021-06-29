@@ -2,10 +2,8 @@ package monitor
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"log"
-	"net/url"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -41,18 +39,9 @@ func execPuppeteer(url string) (string, error) {
 	return outString, nil
 }
 
-// ensures all arguments to sprinf are properly escaped
-func uSprintf(format string, vv ...string) string {
-	vCopy := make([]interface{}, len(vv))
-	for i, v := range vv {
-		vCopy[i] = url.PathEscape(v)
-	}
-	return fmt.Sprintf(format, vCopy...)
-}
-
 func QueryBestBuy(j domain.PriceCheckJob, keyword string) []domain.Model {
 	models := make([]domain.Model, 0)
-	url := uSprintf(j.Site.UrlFormat, keyword, j.Product.Name)
+	url := Uprintf(j.Site.UrlFormat, keyword, j.Product.Name)
 
 	html, err := execPuppeteer(url)
 	if err != nil {
@@ -115,7 +104,7 @@ func QueryWalMart(j domain.PriceCheckJob, keyword string) []domain.Model {
 
 func QueryNewegg(j domain.PriceCheckJob, keyword string) []domain.Model {
 	models := make([]domain.Model, 0)
-	url := uSprintf(j.Site.UrlFormat, keyword, j.Product.Name, strconv.Itoa(j.Product.PriceThreshhold))
+	url := Uprintf(j.Site.UrlFormat, keyword, j.Product.Name, strconv.Itoa(j.Product.PriceThreshhold))
 
 	html, err := execPuppeteer(url)
 	if err != nil {
