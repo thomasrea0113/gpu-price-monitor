@@ -1,12 +1,15 @@
-package domain
+package monitor
 
 type RequestMessage struct {
 	ConfigOverrides *Config `json:"configOverrides"`
 }
 
 type PriceCheckJob struct {
-	Site    Site
-	Product Product
+	SiteName        string
+	ProductName     string
+	PriceThreshhold int
+	Url             string
+	PageContent     *string
 }
 
 // a struct to hold quantity/price information for a specific model of a product
@@ -22,4 +25,7 @@ type PriceCheckResponse struct {
 	Job    PriceCheckJob
 	Error  error
 	Models []Model
+}
+
+type JobContext struct {
 }

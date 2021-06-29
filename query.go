@@ -1,55 +1,17 @@
 package monitor
 
 import (
-	"bytes"
-	"io"
 	"log"
-	"os/exec"
 	"strconv"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/thomasrea0113/gpu-price-monitor/domain"
 )
 
-func execPuppeteer(url string) (string, error) {
-	cmd := exec.Command("node", "index.js", url)
+func QueryBestBuy(j PriceCheckJob) []Model {
+	models := make([]Model, 0)
 
-	var out bytes.Buffer
-	cmd.Stdout = &out
-
-	if err := cmd.Run(); err != nil {
-		return "", err
-	}
-
-	var outString string
-	for {
-		if line, err := out.ReadString(byte('\n')); err != nil {
-			if err == io.EOF {
-				break
-			} else {
-				log.Printf("unexpected error: %v", err)
-				return "", err
-			}
-		} else {
-			outString += line
-		}
-	}
-
-	return outString, nil
-}
-
-func QueryBestBuy(j domain.PriceCheckJob, keyword string) []domain.Model {
-	models := make([]domain.Model, 0)
-	url := Uprintf(j.Site.UrlFormat, keyword, j.Product.Name)
-
-	html, err := execPuppeteer(url)
-	if err != nil {
-		log.Printf("error execing puppeteer: %v", err)
-		return models
-	}
-
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(html))
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(*j.PageContent))
 	if err != nil {
 		log.Printf("error parsing document: %v", err)
 		return models
@@ -84,8 +46,8 @@ func QueryBestBuy(j domain.PriceCheckJob, keyword string) []domain.Model {
 			return
 		}
 
-		if price < float64(j.Product.PriceThreshhold) {
-			models = append(models, domain.Model{
+		if price < float64(j.PriceThreshhold) {
+			models = append(models, Model{
 				Number: modelNumber,
 				Price:  float32(price),
 				Url:    "https://bestbuy.com" + url})
@@ -95,24 +57,17 @@ func QueryBestBuy(j domain.PriceCheckJob, keyword string) []domain.Model {
 	return models
 }
 
-func QueryWalMart(j domain.PriceCheckJob, keyword string) []domain.Model {
-	models := make([]domain.Model, 0)
+func QueryWalMart(j PriceCheckJob) []Model {
+	models := make([]Model, 0)
 
 	// TODO use colly to get all the models returned for a given product + keyword, across first couple pages
 	return models
 }
 
-func QueryNewegg(j domain.PriceCheckJob, keyword string) []domain.Model {
-	models := make([]domain.Model, 0)
-	url := Uprintf(j.Site.UrlFormat, keyword, j.Product.Name, strconv.Itoa(j.Product.PriceThreshhold))
+func QueryNewegg(j PriceCheckJob) []Model {
+	models := make([]Model, 0)
 
-	html, err := execPuppeteer(url)
-	if err != nil {
-		log.Printf("error execing puppeteer: %v", err)
-		return models
-	}
-
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(html))
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(*j.PageContent))
 	if err != nil {
 		log.Printf("error parsing document: %v", err)
 		return models
@@ -139,12 +94,13 @@ func QueryNewegg(j domain.PriceCheckJob, keyword string) []domain.Model {
 			return
 		}
 
-		detailsContent, err := execPuppeteer(detailsUrl)
+		detailsMap, err := ExecPuppeteer([]string{detailsUrl})
 		if err != nil {
 			log.Printf("error navigating to details: %v", err)
 			return
 		}
 
+		detailsContent := (*detailsMap)[detailsUrl]
 		detailsDoc, err := goquery.NewDocumentFromReader(strings.NewReader(detailsContent))
 		if err != nil {
 			log.Printf("error parsing document: %v", err)
@@ -166,13 +122,13 @@ func QueryNewegg(j domain.PriceCheckJob, keyword string) []domain.Model {
 			return
 		}
 
-		models = append(models, domain.Model{Price: float32(price), Number: modelNumber, Url: detailsUrl})
+		models = append(models, Model{Price: float32(price), Number: modelNumber, Url: detailsUrl})
 	})
 
 	return models
 }
 
-func QueryMicroCenter(j domain.PriceCheckJob, keyword string) []domain.Model {
+func QueryMicroCenter(j PriceCheckJob) []Model {
 	// TODO use colly to get all the models returned for a given product + keyword, across first couple pages
-	return make([]domain.Model, 0)
+	return make([]Model, 0)
 }

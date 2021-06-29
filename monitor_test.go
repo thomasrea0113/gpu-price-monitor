@@ -7,11 +7,10 @@ import (
 	"testing"
 
 	monitor "github.com/thomasrea0113/gpu-price-monitor"
-	"github.com/thomasrea0113/gpu-price-monitor/domain"
 )
 
 func TestConfig(t *testing.T) {
-	cfg, err := domain.LoadConfig()
+	cfg, err := monitor.LoadConfig()
 	if err != nil {
 		t.Fatalf("Error loading config: %v", err)
 	}
@@ -50,7 +49,7 @@ func TestConfig(t *testing.T) {
 }
 
 func TestMail(t *testing.T) {
-	cfg, err := domain.LoadConfig()
+	cfg, err := monitor.LoadConfig()
 	if err != nil {
 		t.Fatalf("Error loading config: %v", err)
 	}
@@ -63,12 +62,12 @@ func TestMail(t *testing.T) {
 func TestMonitorProducts(t *testing.T) {
 	// TODO add more tests
 	tests := []struct {
-		body domain.RequestMessage
+		body monitor.RequestMessage
 		want string
 	}{
-		{body: domain.RequestMessage{}, want: "Okay"},
+		{body: monitor.RequestMessage{}, want: "Okay"},
 		// TODO is there a simpler way to initialize nested structs?
-		{body: domain.RequestMessage{ConfigOverrides: &domain.Config{SendEmails: monitor.NewFalse()}}, want: "Okay"},
+		{body: monitor.RequestMessage{ConfigOverrides: &monitor.Config{SendEmails: monitor.NewFalse()}}, want: "Okay"},
 	}
 
 	for _, test := range tests {

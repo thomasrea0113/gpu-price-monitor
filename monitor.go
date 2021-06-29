@@ -5,12 +5,10 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-
-	"github.com/thomasrea0113/gpu-price-monitor/domain"
 )
 
-func getConfigWithOverrides(overrideCfg *domain.Config) (*domain.Config, error) {
-	cfg, err := domain.LoadConfig()
+func getConfigWithOverrides(overrideCfg *Config) (*Config, error) {
+	cfg, err := LoadConfig()
 	if err != nil {
 		return cfg, fmt.Errorf("error loading config: %v", err)
 	}
@@ -26,7 +24,7 @@ func getConfigWithOverrides(overrideCfg *domain.Config) (*domain.Config, error) 
 
 func MonitorProducts(w http.ResponseWriter, r *http.Request) {
 	// reading message body
-	var msg domain.RequestMessage
+	var msg RequestMessage
 	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
 		writeAndLog(w, "could not read request body: %v", err)
 		return
@@ -38,13 +36,18 @@ func MonitorProducts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pool := NewWorkerPool(100, cfg.GetJobs(), scrape)
+	jobs, err := cfg.GetJobs()
+	if err != nil {
+		writeAndLog(w, "error getting jobs: %v", err)
+	}
+
+	pool := NewWorkerPool(100, jobs, scrape)
 	pool.Start()
 
 	hasStock := false
 	body := "<h2>Looks like some GPUs are finally available!</h2>"
 	for i := 0; i < pool.JobCount; i++ {
-		result := (<-pool.Results).(domain.PriceCheckResponse)
+		result := (<-pool.Results).(PriceCheckResponse)
 
 		if len(result.Models) > 0 {
 			hasStock = true
@@ -52,14 +55,14 @@ func MonitorProducts(w http.ResponseWriter, r *http.Request) {
 			for _, model := range result.Models {
 				if model.Error == nil {
 					modelStr += Hprintf("<li>%v (model: %v) for %v </li>",
-						result.Job.Product.Name,
+						result.Job.ProductName,
 						model.Number,
 						strconv.Itoa(int(model.Price)))
 				}
 			}
 			modelStr += "</ul>"
 
-			body += Hprintf("<div><h3>%v</h3>%v</div>", result.Job.Site.Name, modelStr)
+			body += Hprintf("<div><h3>%v</h3>%v</div>", result.Job.SiteName, modelStr)
 		}
 	}
 

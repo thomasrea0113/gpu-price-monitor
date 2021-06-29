@@ -1,71 +1,65 @@
 package monitor
 
 import (
+	"strconv"
+
 	"github.com/pkg/errors"
-	"github.com/thomasrea0113/gpu-price-monitor/domain"
 )
 
 // a function that is responsible for scraping one keyword query for a given job
-type KeywordScrapeFunc = func(domain.PriceCheckJob, string) []domain.Model
+type KeywordScrapeFunc = func(PriceCheckJob) []Model
 
 // HOF that will break up the keyword queries, and aggregrate the returned models
 // TODO bubble errors to resp.Error
-func scraper(work KeywordScrapeFunc) func(domain.PriceCheckJob) []domain.Model {
-	return func(j domain.PriceCheckJob) []domain.Model {
-		// a model map of model number to the model struct. used to easily identify duplicate models
-		modelMap := make(map[string]domain.Model)
-
-		// TODO is there a simpler way to cast a slice to a slice of empty interfaces?
-		keywordJobs := make([]interface{}, len(j.Product.AdditionalKeywords))
-		for i, k := range j.Product.AdditionalKeywords {
-			keywordJobs[i] = k
-		}
-
-		worker := NewWorkerPool(100, keywordJobs, func(t interface{}) interface{} {
-			return work(j, t.(string))
-		})
-
-		worker.Start()
-
+func reduce(work KeywordScrapeFunc) func(PriceCheckJob) []Model {
+	return func(j PriceCheckJob) []Model {
 		// reduce keyword model-map into one flat list of models. If the same model appears twice, take
 		// the one with the lower price
-		for i := 0; i < worker.JobCount; i++ {
-			result := <-worker.Results
-			models := result.([]domain.Model)
-			for _, model := range models {
-				if existing, ok := modelMap[model.Number]; !ok {
-					if model.Price < existing.Price {
-						modelMap[model.Number] = model
-					}
-				}
+		models := work(j)
+		modelMap := make(map[string]Model)
+
+		// handle model duplicates, by keeping the listing with the lowest price
+		reducedModels := make([]Model, 0, len(models))
+		i := 0
+		for _, model := range models {
+			existing, ok := modelMap[model.Number]
+			if !ok || model.Price < existing.Price {
+				modelMap[model.Number] = model
+				reducedModels = append(reducedModels, model)
+				i++
 			}
 		}
 
-		// get just the model value, and create a new slice of just the values
-		models := make([]domain.Model, 0, len(modelMap))
-		for _, v := range modelMap {
-			models = append(models, v)
-		}
+		return reducedModels
+	}
+}
 
-		return models
+func GenerateUrl(site Site, product Product, keyword string) (string, error) {
+	switch site.Name {
+	case "Best Buy":
+		return Uprintf(site.UrlFormat, keyword, product.Name), nil
+	case "Newegg":
+		return Uprintf(site.UrlFormat, keyword, product.Name, strconv.Itoa(product.PriceThreshhold)), nil
+	default:
+		return "", errors.Errorf("Unrecognized site name: %v", site.Name)
 	}
 }
 
 func scrape(job interface{}) interface{} {
-	j := job.(domain.PriceCheckJob)
-	resp := domain.PriceCheckResponse{Job: j}
+	j := job.(PriceCheckJob)
+	resp := PriceCheckResponse{Job: j}
 
-	switch j.Site.Name {
+	switch j.SiteName {
 	case "Best Buy":
-		resp.Models = scraper(QueryBestBuy)(j)
+		resp.Models = reduce(QueryBestBuy)(j)
 	case "Wal-Mart":
-		resp.Models = scraper(QueryWalMart)(j)
+		resp.Models = reduce(QueryWalMart)(j)
 	case "Micro Center":
-		resp.Models = scraper(QueryMicroCenter)(j)
+		resp.Models = reduce(QueryMicroCenter)(j)
 	case "Newegg":
-		resp.Models = scraper(QueryNewegg)(j)
+		resp.Models = reduce(QueryNewegg)(j)
 	default:
-		resp.Error = errors.Errorf("Unknown site name: %v", j.Site.Name)
+		resp.Error = errors.Errorf("Unknown site name: %v", j.SiteName)
 	}
 
 	return resp

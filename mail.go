@@ -3,8 +3,6 @@ package monitor
 import (
 	"fmt"
 	"net/smtp"
-
-	"github.com/thomasrea0113/gpu-price-monitor/domain"
 )
 
 // smtpServer data to smtp server
@@ -18,7 +16,7 @@ func (s *smtpServer) Address() string {
 	return s.host + ":" + s.port
 }
 
-func SendMail(cfg *domain.Config, subject string, msg string) error {
+func SendMail(cfg *Config, subject string, msg string) error {
 	smtpServer := smtpServer{host: "smtp.gmail.com", port: "587"}
 	auth := smtp.PlainAuth("", cfg.Mail.From, cfg.Mail.Password, smtpServer.host)
 

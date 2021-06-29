@@ -1,9 +1,10 @@
-package domain
+package monitor
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"reflect"
 	"strings"
@@ -55,18 +56,49 @@ func loadConfigFile(path string) (*Config, error) {
 	return cfg, nil
 }
 
-func (cfg Config) GetJobs() []interface{} {
+func (cfg Config) GetJobs() ([]interface{}, error) {
+	// this will grow if there are several keywords for each product, but it's a starting point
 	products := make([]interface{}, len(cfg.Sites)*len(cfg.Products))
 
 	i := 0
+	jobs := make([]PriceCheckJob, 0, len(products))
 	for _, site := range cfg.Sites {
 		for _, product := range cfg.Products {
-			products[i] = PriceCheckJob{Site: site, Product: product}
-			i++
+			for _, keyword := range product.AdditionalKeywords {
+				url, err := GenerateUrl(site, product, keyword)
+				if err != nil {
+					log.Printf("error getting job url: %v", err)
+					continue
+				}
+
+				jobs = append(jobs, PriceCheckJob{
+					Url:             url,
+					SiteName:        site.Name,
+					ProductName:     product.Name,
+					PriceThreshhold: product.PriceThreshhold,
+				})
+				i++
+			}
 		}
 	}
 
-	return products
+	urls := make([]string, len(jobs))
+	for k, j := range jobs {
+		urls[k] = j.Url
+	}
+
+	// TODO contentMap is coming back empty, without any error
+	contentMap, err := ExecPuppeteer(urls)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, j := range jobs {
+		content := (*contentMap)[j.Url]
+		j.PageContent = &content
+	}
+
+	return products, nil
 }
 
 // a simple merge function that applies each field value on top of dest, or the value of the previous Config in the array
