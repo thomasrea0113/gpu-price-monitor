@@ -57,11 +57,9 @@ func loadConfigFile(path string) (*Config, error) {
 }
 
 func (cfg Config) GetJobs() ([]interface{}, error) {
-	// this will grow if there are several keywords for each product, but it's a starting point
-	products := make([]interface{}, len(cfg.Sites)*len(cfg.Products))
-
 	i := 0
-	jobs := make([]PriceCheckJob, 0, len(products))
+	jobs := make([]PriceCheckJob, 0, len(cfg.Sites)*len(cfg.Products))
+
 	for _, site := range cfg.Sites {
 		for _, product := range cfg.Products {
 			for _, keyword := range product.AdditionalKeywords {
@@ -93,12 +91,14 @@ func (cfg Config) GetJobs() ([]interface{}, error) {
 		return nil, err
 	}
 
-	for _, j := range jobs {
+	jobInter := make([]interface{}, len(jobs))
+	for i, j := range jobs {
 		content := (*contentMap)[j.Url]
 		j.PageContent = &content
+		jobInter[i] = j
 	}
 
-	return products, nil
+	return jobInter, nil
 }
 
 // a simple merge function that applies each field value on top of dest, or the value of the previous Config in the array

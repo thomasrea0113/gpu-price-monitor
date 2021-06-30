@@ -94,29 +94,8 @@ func QueryNewegg(j PriceCheckJob) []Model {
 			return
 		}
 
-		detailsMap, err := ExecPuppeteer([]string{detailsUrl})
-		if err != nil {
-			log.Printf("error navigating to details: %v", err)
-			return
-		}
-
-		detailsContent := (*detailsMap)[detailsUrl]
-		detailsDoc, err := goquery.NewDocumentFromReader(strings.NewReader(detailsContent))
-		if err != nil {
-			log.Printf("error parsing document: %v", err)
-			return
-		}
-
 		// TODO get model number
-		var modelNumber string
-		detailsDoc.Find("tr th").EachWithBreak(func(i int, s *goquery.Selection) bool {
-			if strings.ToLower(strings.TrimSpace(s.Text())) == "model" {
-				modelNumber = s.SiblingsFiltered("td").Text()
-				return false
-			}
-			return true
-		})
-
+		modelNumber := strings.Split(detailsUrl, "/")[3]
 		if modelNumber == "" {
 			log.Println("model number not found on details page")
 			return

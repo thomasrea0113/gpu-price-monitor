@@ -34,5 +34,5 @@ puppeteer.use(StealthPlugin());
     await cluster.idle();
     await cluster.close();
 
-    console.log(contents)
+    console.log(JSON.stringify(contents))
 })();

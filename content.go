@@ -4,19 +4,19 @@ import (
 	"bytes"
 	"encoding/json"
 	"os/exec"
-	"strings"
 )
 
 func ExecPuppeteer(urls []string) (*map[string]string, error) {
 	contentMap := make(map[string]string, len(urls))
 
 	// ensure urls are properly quoted
+	args := make([]string, len(urls)+1)
+	args[0] = "index.js"
 	for i, v := range urls {
-		urls[i] = "'" + v + "'"
+		args[i+1] = v
 	}
 
-	args := strings.Join(urls, " ")
-	cmd := exec.Command("node", "index.js", args)
+	cmd := exec.Command("node", args...)
 
 	var out bytes.Buffer
 	cmd.Stdout = &out

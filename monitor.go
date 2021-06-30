@@ -3,6 +3,8 @@ package monitor
 import (
 	"encoding/json"
 	"fmt"
+	"html"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -54,20 +56,26 @@ func MonitorProducts(w http.ResponseWriter, r *http.Request) {
 			modelStr := "<ul>"
 			for _, model := range result.Models {
 				if model.Error == nil {
-					modelStr += Hprintf("<li>%v (model: %v) for %v </li>",
-						result.Job.ProductName,
+					modelStr += Hprintf("<li><strong>%v</strong> is available for <strong>%v</strong></li>",
 						model.Number,
 						strconv.Itoa(int(model.Price)))
 				}
 			}
 			modelStr += "</ul>"
 
-			body += Hprintf("<div><h3>%v</h3>%v</div>", result.Job.SiteName, modelStr)
+			body += fmt.Sprintf("<div><h3>%v - %v</h3>%v</div>",
+				html.EscapeString(result.Job.SiteName),
+				html.EscapeString(result.Job.ProductName),
+				modelStr)
 		}
 	}
 
 	if hasStock {
-		SendMail(cfg, "GPU Stock Available!", body)
+		if *cfg.SendEmails {
+			SendMail(cfg, "GPU Stock Available!", body)
+		} else {
+			log.Println("skipping email")
+		}
 		fmt.Fprint(w, body)
 	} else {
 		writeAndLog(w, "No stock available")
