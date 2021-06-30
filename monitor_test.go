@@ -61,20 +61,17 @@ func TestMail(t *testing.T) {
 
 func TestMonitorProducts(t *testing.T) {
 	// TODO add more tests
-	tests := []struct {
-		body monitor.RequestMessage
-		want string
-	}{
-		{body: monitor.RequestMessage{}, want: "Okay"},
+	tests := []monitor.RequestMessage{
+		{},
 		// TODO is there a simpler way to initialize nested structs?
-		{body: monitor.RequestMessage{ConfigOverrides: &monitor.Config{SendEmails: monitor.NewFalse()}}, want: "Okay"},
+		{ConfigOverrides: &monitor.Config{SendEmails: monitor.NewFalse()}},
 	}
 
 	for _, test := range tests {
 		var message []byte
 		var err error
 
-		if message, err = json.Marshal(test.body); err != nil {
+		if message, err = json.Marshal(test); err != nil {
 			t.Fatal(err)
 		}
 
@@ -84,8 +81,8 @@ func TestMonitorProducts(t *testing.T) {
 		rr := httptest.NewRecorder()
 		monitor.MonitorProducts(rr, req)
 
-		if got := rr.Body.String(); got != test.want {
-			t.Fatalf("MonitorProducts(%q) = %q, want %q", string(message), got, test.want)
+		if got := rr.Body.String(); got == "" {
+			t.Fatalf("MonitorProducts(%q) = response was empty!", string(message))
 		}
 	}
 }

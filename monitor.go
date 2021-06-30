@@ -3,6 +3,7 @@ package monitor
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 )
 
@@ -43,62 +44,19 @@ func MonitorProducts(w http.ResponseWriter, r *http.Request) {
 	pool := NewWorkerPool(100, jobs, scrape)
 	pool.Start()
 
-	// TODO add some functions to reduce copied code
-	StockMap := make(StockMap)
+	stockMap := make(StockMap)
 	for i := 0; i < pool.JobCount; i++ {
-		result := (<-pool.Results).(PriceCheckResponse)
-
-		if productMap, ok := StockMap[result.Job.SiteName]; ok {
-			if modelMap, ok := productMap[result.Job.ProductName]; ok {
-				for _, model := range result.Models {
-					if existingPrice, ok := modelMap[model.Number]; ok {
-						if model.Price < existingPrice {
-							modelMap[model.Number] = model.Price
-						}
-					} else {
-						modelMap[model.Number] = model.Price
-					}
-				}
-			} else if len(result.Models) > 0 {
-				modelMap = make(map[string]float32)
-				for _, model := range result.Models {
-					if existingPrice, ok := modelMap[model.Number]; ok {
-						if model.Price < existingPrice {
-							modelMap[model.Number] = model.Price
-						}
-					} else {
-						modelMap[model.Number] = model.Price
-					}
-				}
-
-				productMap[result.Job.ProductName] = modelMap
-			}
-		} else if len(result.Models) > 0 {
-			productMap = make(map[string]map[string]float32)
-			modelMap := make(map[string]float32)
-			for _, model := range result.Models {
-				if existingPrice, ok := modelMap[model.Number]; ok {
-					if model.Price < existingPrice {
-						modelMap[model.Number] = model.Price
-					}
-				} else {
-					modelMap[model.Number] = model.Price
-				}
-			}
-			productMap[result.Job.ProductName] = modelMap
-
-			StockMap[result.Job.SiteName] = productMap
-		}
+		stockMap.AddResult((<-pool.Results).(PriceCheckResponse))
 	}
 
-	email, hasStock := GenerateResultsEmail(StockMap)
+	email, hasStock := GenerateResultsEmail(stockMap)
 
 	if hasStock {
-		// if *cfg.SendEmails {
-		SendMail(cfg, "GPU Stock Available!", email)
-		// } else {
-		// 	log.Println("skipping email")
-		// }
+		if *cfg.SendEmails {
+			SendMail(cfg, "GPU Stock Available!", email)
+		} else {
+			log.Println("skipping email")
+		}
 		fmt.Fprint(w, email)
 	} else {
 		writeAndLog(w, "No stock available")

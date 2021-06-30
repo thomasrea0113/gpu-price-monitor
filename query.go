@@ -11,6 +11,11 @@ import (
 func QueryBestBuy(j PriceCheckJob) []Model {
 	models := make([]Model, 0)
 
+	if j.PageContent == nil {
+		log.Printf("no content for %v, puppeteer must have encountered an error", j.Url)
+		return models
+	}
+
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(*j.PageContent))
 	if err != nil {
 		log.Printf("error parsing document: %v", err)
@@ -66,6 +71,11 @@ func QueryWalMart(j PriceCheckJob) []Model {
 
 func QueryNewegg(j PriceCheckJob) []Model {
 	models := make([]Model, 0)
+
+	if j.PageContent == nil {
+		log.Printf("no content for %v, puppeteer must have encountered an error", j.Url)
+		return models
+	}
 
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(*j.PageContent))
 	if err != nil {
