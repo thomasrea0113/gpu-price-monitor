@@ -3,10 +3,7 @@ package monitor
 import (
 	"encoding/json"
 	"fmt"
-	"html"
-	"log"
 	"net/http"
-	"strconv"
 )
 
 func getConfigWithOverrides(overrideCfg *Config) (*Config, error) {
@@ -46,37 +43,63 @@ func MonitorProducts(w http.ResponseWriter, r *http.Request) {
 	pool := NewWorkerPool(100, jobs, scrape)
 	pool.Start()
 
-	hasStock := false
-	body := "<h2>Looks like some GPUs are finally available!</h2>"
+	// TODO add some functions to reduce copied code
+	StockMap := make(StockMap)
 	for i := 0; i < pool.JobCount; i++ {
 		result := (<-pool.Results).(PriceCheckResponse)
 
-		if len(result.Models) > 0 {
-			hasStock = true
-			modelStr := "<ul>"
+		if productMap, ok := StockMap[result.Job.SiteName]; ok {
+			if modelMap, ok := productMap[result.Job.ProductName]; ok {
+				for _, model := range result.Models {
+					if existingPrice, ok := modelMap[model.Number]; ok {
+						if model.Price < existingPrice {
+							modelMap[model.Number] = model.Price
+						}
+					} else {
+						modelMap[model.Number] = model.Price
+					}
+				}
+			} else if len(result.Models) > 0 {
+				modelMap = make(map[string]float32)
+				for _, model := range result.Models {
+					if existingPrice, ok := modelMap[model.Number]; ok {
+						if model.Price < existingPrice {
+							modelMap[model.Number] = model.Price
+						}
+					} else {
+						modelMap[model.Number] = model.Price
+					}
+				}
+
+				productMap[result.Job.ProductName] = modelMap
+			}
+		} else if len(result.Models) > 0 {
+			productMap = make(map[string]map[string]float32)
+			modelMap := make(map[string]float32)
 			for _, model := range result.Models {
-				if model.Error == nil {
-					modelStr += Hprintf("<li><strong>%v</strong> is available for <strong>%v</strong></li>",
-						model.Number,
-						strconv.Itoa(int(model.Price)))
+				if existingPrice, ok := modelMap[model.Number]; ok {
+					if model.Price < existingPrice {
+						modelMap[model.Number] = model.Price
+					}
+				} else {
+					modelMap[model.Number] = model.Price
 				}
 			}
-			modelStr += "</ul>"
+			productMap[result.Job.ProductName] = modelMap
 
-			body += fmt.Sprintf("<div><h3>%v - %v</h3>%v</div>",
-				html.EscapeString(result.Job.SiteName),
-				html.EscapeString(result.Job.ProductName),
-				modelStr)
+			StockMap[result.Job.SiteName] = productMap
 		}
 	}
 
+	email, hasStock := GenerateResultsEmail(StockMap)
+
 	if hasStock {
-		if *cfg.SendEmails {
-			SendMail(cfg, "GPU Stock Available!", body)
-		} else {
-			log.Println("skipping email")
-		}
-		fmt.Fprint(w, body)
+		// if *cfg.SendEmails {
+		SendMail(cfg, "GPU Stock Available!", email)
+		// } else {
+		// 	log.Println("skipping email")
+		// }
+		fmt.Fprint(w, email)
 	} else {
 		writeAndLog(w, "No stock available")
 	}

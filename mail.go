@@ -3,6 +3,7 @@ package monitor
 import (
 	"fmt"
 	"net/smtp"
+	"strconv"
 )
 
 // smtpServer data to smtp server
@@ -29,4 +30,26 @@ func SendMail(cfg *Config, subject string, msg string) error {
 	}
 
 	return nil
+}
+
+type StockMap map[string]map[string]map[string]float32
+
+func GenerateResultsEmail(stockMap StockMap) (string, bool) {
+	hasStock := false
+	body := "<h1>Looks like some GPUs are finally available!</h1>"
+	for siteName, productMap := range stockMap {
+		body += fmt.Sprintf("<div><h2>stock at <strong>%v</strong></h2>", siteName)
+		for productName, models := range productMap {
+			body += fmt.Sprintf("<h3>Models/price available for <strong>%v</strong>:</h3><ul>", productName)
+			for modelNumber, price := range models {
+				hasStock = true
+				body += Hprintf("<li><strong>%v</strong> is available for <strong>%v</strong></li>",
+					modelNumber,
+					strconv.Itoa(int(price)))
+			}
+			body += "</ul>"
+		}
+		body += "</div>"
+	}
+	return body, hasStock
 }
